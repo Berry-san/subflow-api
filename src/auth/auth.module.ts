@@ -10,7 +10,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 
 import { RedisModule } from 'src/redis/redis.module';
-import { AppleStrategy } from './strategies/apple.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
@@ -27,7 +26,9 @@ import { GoogleStrategy } from './strategies/google.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, AppleStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy,
+    // AppleStrategy
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}
