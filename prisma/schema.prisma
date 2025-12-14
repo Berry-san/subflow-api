@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SYSTEM_OWNER
+  ADMIN
+  MEMBER
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  APPLE
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String    @unique
+  phone         String?
+  dob           DateTime?
+  referralCode  String?
+  referredBy    String?
+  passwordHash  String?
+  hashedRefreshToken String?
+  role          Role      @default(MEMBER)
+  authProvider  AuthProvider @default(LOCAL)
+  googleId      String?
+  appleId       String?
+  isEmailVerified Boolean @default(false)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  
+  // Security fields
+  failedLoginAttempts Int      @default(0)
+  accountLockedUntil  DateTime?
+  lastFailedLogin     DateTime?
+
+  createdSubscriptions Subscription[]
+  createdGroups        Group[]
+  memberships          GroupMembership[]
+  transactions         Transaction[]
+  auditLogs            AuditLog[]
+  payoutSettings       PayoutSetting[]
+  createdPaymentLinks  PaymentLink[]
+  reminders            EmailReminderSchedule[]
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+model Subscription {
+  id          String             @id @default(uuid())
+  name        String
+  description String?
+  createdByUserId String
+  createdByUser   User @relation(fields: [createdByUserId], references: [id])
+  
+  allowedPlans String[] // e.g. ["WEEKLY", "MONTHLY"]
+  currency     String   @default("NGN")
+  status       SubscriptionStatus @default(ACTIVE)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  groups      Group[]
+  paymentLinks PaymentLink[]
+}
+
+enum GroupStatus {
+  ACTIVE
+  CLOSED
+}
+
+model Group {
+  id             String      @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  
+  groupName      String
+  groupLimit     Int
+  adminUserId    String
+  adminUser      User        @relation(fields: [adminUserId], references: [id])
+  
+  status         GroupStatus @default(ACTIVE)
+  rules          String?
+  customFieldsConfig Json?    // e.g. [{ "name": "studentId", "type": "string", "required": true }]
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  members        GroupMembership[]
+  payments       GroupPayment[]
+  transactions   Transaction[]
+  payoutSettings PayoutSetting[]
+  paymentLinks   PaymentLink[]
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  REMOVED
+}
+
+model GroupMembership {
+  id        String           @id @default(uuid())
+  groupId   String
+  group     Group            @relation(fields: [groupId], references: [id])
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  
+  roleInGroup GroupRole      @default(MEMBER)
+  status      MembershipStatus @default(PENDING)
+  
+  customFieldsData Json?     // e.g. { "studentId": "12345" }
+  
+  joinedAt    DateTime       @default(now())
+  approvedAt  DateTime?
+  declinedAt  DateTime?
+  
+  @@unique([groupId, userId])
+}
+
+enum PaymentPlan {
+  ONE_OFF
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum PaymentStatus {
+  OPEN
+  PARTIALLY_PAID
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+model GroupPayment {
+  id             String        @id @default(uuid())
+  groupId        String
+  group          Group         @relation(fields: [groupId], references: [id])
+  
+  plan           PaymentPlan
+  amount         Decimal
+  currency       String        @default("NGN")
+  
+  dueDate        DateTime
+  gracePeriodDays Int          @default(0)
+  
+  status         PaymentStatus @default(OPEN)
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  transactions   Transaction[]
+  paymentLinks   PaymentLink[]
+  reminders      EmailReminderSchedule[]
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  FLUTTERWAVE
+  STRIPE
+}
+
+model Transaction {
+  id               String            @id @default(uuid())
+  groupPaymentId   String?
+  groupPayment     GroupPayment?     @relation(fields: [groupPaymentId], references: [id])
+  groupId          String
+  group            Group             @relation(fields: [groupId], references: [id])
+  userId           String
+  user             User              @relation(fields: [userId], references: [id])
+  
+  amount           Decimal
+  currency         String
+  provider         PaymentProvider
+  providerReference String           @unique
+  status           TransactionStatus @default(PENDING)
+  
+  paidAt           DateTime?
+  metadata         Json?
+  
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model PayoutSetting {
+  id                  String   @id @default(uuid())
+  adminUserId         String?
+  adminUser           User?    @relation(fields: [adminUserId], references: [id])
+  groupId             String?
+  group               Group?   @relation(fields: [groupId], references: [id])
+  
+  bankName            String
+  bankCode            String
+  accountNumber       String
+  accountName         String
+  providerRecipientCode String?
+  isVerified          Boolean  @default(false)
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model PaymentLink {
+  id             String        @id @default(uuid())
+  groupPaymentId String?
+  groupPayment   GroupPayment? @relation(fields: [groupPaymentId], references: [id])
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  groupId        String?
+  group          Group?        @relation(fields: [groupId], references: [id])
+  
+  token          String        @unique
+  expiresAt      DateTime?
+  maxUses        Int?
+  usedCount      Int           @default(0)
+  
+  createdByUserId String
+  createdByUser   User         @relation(fields: [createdByUserId], references: [id])
+  
+  createdAt      DateTime      @default(now())
+}
+
+enum ReminderType {
+  BEFORE_DUE
+  DUE_DAY
+  AFTER_DUE
+}
+
+enum ReminderStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model EmailReminderSchedule {
+  id             String         @id @default(uuid())
+  groupPaymentId String
+  groupPayment   GroupPayment   @relation(fields: [groupPaymentId], references: [id])
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  
+  reminderType   ReminderType
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  status         ReminderStatus @default(SCHEDULED)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String
+  actorUser   User     @relation(fields: [actorUserId], references: [id])
+  
+  action      String
+  entityType  String
+  entityId    String
+  changes     Json?    // before/after
+  ip          String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+}
