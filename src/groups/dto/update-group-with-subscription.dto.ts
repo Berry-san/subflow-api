@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsOptional, ValidateNested } from 'class-validator';
-import { UpdateSubscriptionDto } from 'src/subscriptions/dto/update-subscription.dto';
+import { UpdateSubscriptionDto } from '../../subscriptions/dto/update-subscription.dto';
 import { UpdateGroupDto } from './update-group.dto';
 
 export class UpdateGroupWithSubscriptionDto {
