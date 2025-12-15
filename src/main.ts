@@ -122,7 +122,7 @@ async function bootstrap() {
   });
 
   // Global HTTP logging
-  const { LoggingInterceptor } = await import('./common/interceptors/logging.interceptor');
+  const { LoggingInterceptor } = await import('./common/interceptors/logging.interceptor.js');
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   app.useGlobalPipes(
