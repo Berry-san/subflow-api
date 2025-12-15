@@ -169,21 +169,28 @@ export class GroupsService {
 
   async join(userId: string, groupId: string) {
     // Check if user is already a member
-    const existingMembership = await this.prisma.groupMembership.findUnique({ where: { groupId_userId: { groupId, userId } } });
+    const existingMembership = await this.prisma.groupMembership.findUnique({ 
+      where: { groupId_userId: { groupId, userId } } 
+    });
  
     if (existingMembership) {
-  if (existingMembership.status === 'PENDING') {
-    throw new ForbiddenException('You are already pending to join this group');
-  }
-  throw new ForbiddenException('You are already a member of this group');
-}
+      if (existingMembership.status === 'PENDING') {
+        throw new ForbiddenException('You are already pending to join this group');
+      }
+      throw new ForbiddenException('You are already a member of this group');
+    }
 
     // Check if group exists
-    const group = await this.prisma.group.findUnique({ where: { id: groupId }, include: { members: true } });
+    const group = await this.prisma.group.findUnique({ 
+      where: { id: groupId }, 
+      include: { members: true } 
+    });
     if (!group) throw new ForbiddenException('Group not found');
 
     // Check if group is full
-    if (group.members.length >= group.groupLimit) throw new ForbiddenException('Group is full');
+    if (group.members.length >= group.groupLimit) {
+      throw new ForbiddenException('Group is full');
+    }
 
     // validate user id
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -200,7 +207,9 @@ export class GroupsService {
 
   async approve(adminId: string, groupId: string, memberId: string) {
     const group = await this.prisma.group.findUnique({ where: { id: groupId } });
-    if (!group || group.adminUserId !== adminId) throw new ForbiddenException('Only the group admin can approve members');
+    if (!group || group.adminUserId !== adminId) {
+      throw new ForbiddenException('Only the group admin can approve members');
+    }
 
     return this.prisma.groupMembership.update({
       where: { groupId_userId: { groupId, userId: memberId } },
@@ -210,7 +219,9 @@ export class GroupsService {
 
   async decline(adminId: string, groupId: string, memberId: string) {
     const group = await this.prisma.group.findUnique({ where: { id: groupId } });
-    if (!group || group.adminUserId !== adminId) throw new ForbiddenException('Only the group admin can decline members');
+    if (!group || group.adminUserId !== adminId) {
+      throw new ForbiddenException('Only the group admin can decline members');
+    }
 
     return this.prisma.groupMembership.update({
       where: { groupId_userId: { groupId, userId: memberId } },
@@ -218,15 +229,22 @@ export class GroupsService {
     });
   }
 
-  async updateCombined(userId: string, groupId: string, dto: import('./dto/update-group-with-subscription.dto').UpdateGroupWithSubscriptionDto) {
+  async updateCombined(
+    userId: string, 
+    groupId: string, 
+    dto: import('./dto/update-group-with-subscription.dto').UpdateGroupWithSubscriptionDto
+  ) {
     const { subscriptionDetails, groupDetails } = dto;
 
     const group = await this.prisma.group.findUnique({ where: { id: groupId } });
-    if (!group || group.adminUserId !== userId) throw new ForbiddenException('Only the group admin can update this group');
+    if (!group || group.adminUserId !== userId) {
+      throw new ForbiddenException('Only the group admin can update this group');
+    }
 
     return this.prisma.$transaction(async (tx) => {
-      let updatedSubscription = null;
-      let updatedGroup = null;
+      // Use undefined instead of null for proper TypeScript inference
+      let updatedSubscription: Awaited<ReturnType<typeof tx.subscription.update>> | undefined;
+      let updatedGroup: Awaited<ReturnType<typeof tx.group.update>> | undefined;
 
       // 1. Update Subscription
       if (subscriptionDetails && group.subscriptionId) {
@@ -245,8 +263,8 @@ export class GroupsService {
       }
 
       return {
-        group: updatedGroup || group,
-        subscription: updatedSubscription,
+        group: updatedGroup ?? group,
+        subscription: updatedSubscription ?? null,
       };
     });
   }
