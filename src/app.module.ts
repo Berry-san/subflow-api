@@ -11,7 +11,6 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { UsersModule } from './users/users.module';
 
-import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { CommonModule } from './common/common.module';
 
@@ -20,10 +19,36 @@ import { CommonModule } from './common/common.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    CacheModule.register({
-      isGlobal: true,
-      ttl: 600000, // 10 minutes (in milliseconds)
-    }),
+    //  CacheModule.registerAsync({
+    //   isGlobal: true,
+    //   useFactory: async (config: ConfigService): Promise<CacheOptions> => {
+    //     const redisUrl = config.get<string>('REDIS_URL');
+
+    //     // Use Redis in production, memory in dev
+    //     if (redisUrl && process.env.NODE_ENV === 'production') {
+    //       // Parse REDIS_URL manually (because 'url' isn't in types)
+    //       const url = new URL(redisUrl);
+    //       const store = await redisStore({
+    //         host: url.hostname,
+    //         port: parseInt(url.port, 10) || 6379,
+    //         password: url.password || undefined,
+    //         username: url.username || undefined,
+    //         tls: url.protocol === 'rediss:' ? {} : undefined,
+    //       });
+
+    //       return {
+    //         store,
+    //         ttl: 600, // TTL in **SECONDS** for Redis
+    //       };
+    //     }
+
+    //     // Fallback to in-memory
+    //     return {
+    //       ttl: 600_000, // TTL in **MILLISECONDS** for memory
+    //     };
+    //   },
+    //   inject: [ConfigService],
+    // }),
     PrismaModule,
     RedisModule,
     CommonModule,

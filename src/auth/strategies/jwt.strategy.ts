@@ -28,6 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (isBlacklisted) {
         throw new UnauthorizedException('Token has been revoked');
       }
+      console.log('Token is not blacklisted');
     }
     
     return { userId: payload.sub, email: payload.email, role: payload.role };

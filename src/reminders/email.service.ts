@@ -31,11 +31,13 @@ export class EmailService {
 
     try {
       await sgMail.send(msg);
+      console.log('Email sent successfully to', to);
       this.logger.log(`✅ Email sent successfully to ${to}`);
       return true;
     } catch (error) {
       this.logger.error(`❌ Failed to send email to ${to}`);
       this.logger.error(`Error: ${error.message}`);
+      console.log('Error: ', error);
       if (error.response) {
         this.logger.error(`Status: ${error.response.statusCode}`);
         this.logger.error(`Body: ${JSON.stringify(error.response.body)}`);

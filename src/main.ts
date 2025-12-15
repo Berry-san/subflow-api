@@ -22,7 +22,7 @@ async function bootstrap() {
 
   // Security: CORS configuration
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [process.env.FRONTEND_URL || 'http://localhost:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -39,6 +39,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+
 
   const config = new DocumentBuilder()
     .setTitle('Sublow API')

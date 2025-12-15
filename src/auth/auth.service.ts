@@ -1,10 +1,10 @@
 import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import { RedisService } from 'src/redis/redis.service';
 import { UsersService } from 'src/users/users.service';
 import { AuditService } from '../common/services/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { RedisService } from '../redis/redis.service';
 import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
